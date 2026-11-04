@@ -1,0 +1,687 @@
+<?php
+// ==========================================
+// ANIMEHUB - COMMUNITY ANIME TIER LIST
+// ==========================================
+
+// DATABASE CONNECTION
+$host = "localhost";
+$dbname = "AnimeHub";
+$username = "root";
+$password = "YOUR_DATABASE_PASSWORD";
+
+try {
+    $pdo = new PDO(
+        "mysql:host=$host;dbname=$dbname;charset=utf8mb4",
+        $username,
+        $password,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]
+    );
+} catch (PDOException $e) {
+    die("Database connection failed: " . htmlspecialchars($e->getMessage()));
+}
+
+// HTML SECURITY FUNCTION
+function clean($value) {
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+// CONVERT RATING INTO A TIER
+function getTier($rating) {
+    if ($rating >= 9) return "S";
+    if ($rating >= 8) return "A";
+    if ($rating >= 7) return "B";
+    if ($rating >= 6) return "C";
+    if ($rating >= 5) return "D";
+    return "F";
+}
+
+$message = "";
+$error = "";
+
+// ==========================================
+// SUBMIT AN ANIME OR REVIEW
+// ==========================================
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+    try {
+        $pdo->beginTransaction();
+
+        $user_id = (int)$_POST["user_id"];
+        $rating = (float)$_POST["rating"];
+        $review_text = trim($_POST["review_text"]);
+
+        if ($user_id <= 0 || $rating < 1 || $rating > 10) {
+            throw new Exception("Please select a user and a rating between 1 and 10.");
+        }
+
+        if ($review_text === "") {
+            throw new Exception("Please enter a comment.");
+        }
+
+        // VERIFY USER EXISTS
+        $checkUser = $pdo->prepare(
+            "SELECT User_id FROM Users WHERE User_id = ?"
+        );
+        $checkUser->execute([$user_id]);
+
+        if (!$checkUser->fetch()) {
+            throw new Exception("Invalid user selected.");
+        }
+
+        // CHECK IF ADDING NEW ANIME
+        if ($_POST["anime_option"] === "new") {
+
+            $anime_title = trim($_POST["anime_title"]);
+            $description = trim($_POST["description"]);
+            $release_year = (int)$_POST["release_year"];
+            $episode_count = (int)$_POST["episode_count"];
+            $anime_type = trim($_POST["anime_type"]);
+            $studio_id = (int)$_POST["studio_id"];
+
+            if ($anime_title === "" || $release_year < 1900 ||
+                $release_year > (int)date("Y") || $episode_count < 1) {
+                throw new Exception("Please enter valid anime information.");
+            }
+
+            // INSERT NEW ANIME
+            // The anime is only added when a rating is submitted.
+            $insertAnime = $pdo->prepare(
+                "INSERT INTO Anime
+                (Anime_title, Description, Release_year,
+                 episode_count, anime_type, studio_id)
+                VALUES (?, ?, ?, ?, ?, ?)"
+            );
+
+            $insertAnime->execute([
+                $anime_title,
+                $description,
+                $release_year,
+                $episode_count,
+                $anime_type,
+                $studio_id
+            ]);
+
+            $anime_id = $pdo->lastInsertId();
+
+        } else {
+
+            // EXISTING ANIME
+            $anime_id = (int)$_POST["anime_id"];
+
+            $checkAnime = $pdo->prepare(
+                "SELECT Anime_id FROM Anime WHERE Anime_id = ?"
+            );
+            $checkAnime->execute([$anime_id]);
+
+            if (!$checkAnime->fetch()) {
+                throw new Exception("Anime not found.");
+            }
+        }
+
+        // GENERATE REVIEW ID
+        $nextReview = $pdo->query(
+            "SELECT COALESCE(MAX(review_id), 0) + 1
+             FROM Reviews"
+        )->fetchColumn();
+
+        // INSERT REVIEW AND RATING
+        $insertReview = $pdo->prepare(
+            "INSERT INTO Reviews
+            (review_id, user_id, anime_id, rating,
+             review_text, review_date, last_updated)
+            VALUES (?, ?, ?, ?, ?, CURDATE(), CURDATE())"
+        );
+
+        $insertReview->execute([
+            $nextReview,
+            $user_id,
+            $anime_id,
+            $rating,
+            $review_text
+        ]);
+
+        $pdo->commit();
+
+        $message = "Your rating and review were submitted successfully!";
+
+    } catch (Exception $e) {
+
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        $error = $e->getMessage();
+    }
+}
+
+// ==========================================
+// GET ANIME LIST
+// ==========================================
+
+$animeQuery = "
+    SELECT
+        Anime.Anime_id,
+        Anime.Anime_title,
+        Anime.Description,
+        Anime.Release_year,
+        Anime.episode_count,
+        Anime.anime_type,
+        Studios.Studio_name,
+        COALESCE(AVG(Reviews.rating), 0) AS average_rating,
+        COUNT(Reviews.review_id) AS total_reviews
+    FROM Anime
+    LEFT JOIN Studios
+        ON Anime.studio_id = Studios.Studio_id
+    LEFT JOIN Reviews
+        ON Anime.Anime_id = Reviews.anime_id
+    GROUP BY
+        Anime.Anime_id,
+        Anime.Anime_title,
+        Anime.Description,
+        Anime.Release_year,
+        Anime.episode_count,
+        Anime.anime_type,
+        Studios.Studio_name
+    ORDER BY average_rating DESC, Anime.Anime_title ASC
+";
+
+$animeList = $pdo->query($animeQuery)->fetchAll();
+
+// GET USERS
+$users = $pdo->query(
+    "SELECT User_id, Username FROM Users ORDER BY Username"
+)->fetchAll();
+
+// GET STUDIOS
+$studios = $pdo->query(
+    "SELECT Studio_id, Studio_name FROM Studios ORDER BY Studio_name"
+)->fetchAll();
+
+// GET REVIEWS
+$reviews = $pdo->query("
+    SELECT
+        Reviews.rating,
+        Reviews.review_text,
+        Reviews.review_date,
+        Users.Username,
+        Anime.Anime_title
+    FROM Reviews
+    JOIN Users ON Reviews.user_id = Users.User_id
+    JOIN Anime ON Reviews.anime_id = Anime.Anime_id
+    ORDER BY Reviews.review_date DESC, Reviews.review_id DESC
+    LIMIT 20
+")->fetchAll();
+
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AnimeHub | Community Tier List</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #11111b;
+            color: #f5f5f5;
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            background: #1c1c2b;
+            padding: 25px;
+            text-align: center;
+            border-bottom: 2px solid #8b5cf6;
+        }
+
+        header h1 {
+            color: #a78bfa;
+            font-size: 36px;
+            margin: 0;
+        }
+
+        header p {
+            color: #c4c4d4;
+        }
+
+        nav {
+            background: #252538;
+            padding: 15px;
+            text-align: center;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 15px;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            color: #a78bfa;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        h2 {
+            color: #a78bfa;
+            border-bottom: 1px solid #44445c;
+            padding-bottom: 10px;
+        }
+
+        .anime-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .anime-card {
+            background: #222235;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #393950;
+        }
+
+        .anime-card h3 {
+            color: #c4b5fd;
+        }
+
+        .rating {
+            font-size: 25px;
+            font-weight: bold;
+            color: #facc15;
+        }
+
+        .tier {
+            display: inline-block;
+            background: #8b5cf6;
+            color: white;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .form-box {
+            background: #222235;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0 18px;
+            background: #33334a;
+            color: white;
+            border: 1px solid #555570;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            padding: 13px 22px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #7041d8;
+        }
+
+        .review {
+            background: #222235;
+            padding: 18px;
+            margin: 12px 0;
+            border-radius: 8px;
+        }
+
+        .success {
+            background: #14532d;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .error {
+            background: #7f1d1d;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            background: #1c1c2b;
+            margin-top: 50px;
+            color: #aaa;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>AnimeHub</h1>
+    <p>Your Community Anime Rating and Tier List</p>
+</header>
+
+<nav>
+    <a href="#home">Home</a>
+    <a href="#tierlist">Tier List</a>
+    <a href="#submit">Rate Anime</a>
+    <a href="#reviews">Reviews</a>
+</nav>
+
+<div class="container" id="home">
+
+    <?php if ($message): ?>
+        <p class="success"><?= clean($message) ?></p>
+    <?php endif; ?>
+
+    <?php if ($error): ?>
+        <p class="error"><?= clean($error) ?></p>
+    <?php endif; ?>
+
+    <h2>Welcome to AnimeHub</h2>
+
+    <p>
+        AnimeHub is a community-driven anime rating website.
+        Users can rate anime, leave reviews, and help determine
+        the community's overall anime rankings.
+    </p>
+
+</div>
+
+<!-- ANIME TIER LIST -->
+
+<div class="container" id="tierlist">
+
+    <h2>Community Anime Tier List</h2>
+
+    <p>
+        Anime rankings are calculated using the average
+        ratings submitted by the community.
+    </p>
+
+    <div class="anime-grid">
+
+        <?php foreach ($animeList as $anime): ?>
+
+            <div class="anime-card">
+
+                <h3><?= clean($anime["Anime_title"]) ?></h3>
+
+                <span class="tier">
+                    <?= getTier((float)$anime["average_rating"]) ?> Tier
+                </span>
+
+                <p class="rating">
+                    <?= number_format((float)$anime["average_rating"], 1) ?>/10
+                </p>
+
+                <p>
+                    <?= clean($anime["Description"]) ?>
+                </p>
+
+                <p>
+                    <strong>Release Year:</strong>
+                    <?= clean($anime["Release_year"]) ?>
+                </p>
+
+                <p>
+                    <strong>Episodes:</strong>
+                    <?= clean($anime["episode_count"]) ?>
+                </p>
+
+                <p>
+                    <strong>Type:</strong>
+                    <?= clean($anime["anime_type"]) ?>
+                </p>
+
+                <p>
+                    <strong>Studio:</strong>
+                    <?= clean($anime["Studio_name"] ?? "Unknown") ?>
+                </p>
+
+                <p>
+                    <strong>Community Reviews:</strong>
+                    <?= clean($anime["total_reviews"]) ?>
+                </p>
+
+                <a href="#submit"
+                   style="color:#a78bfa;"
+                   onclick="selectAnime(<?= (int)$anime['Anime_id'] ?>)">
+                    Rate this anime
+                </a>
+
+            </div>
+
+        <?php endforeach; ?>
+
+    </div>
+
+</div>
+
+<!-- SUBMIT ANIME / REVIEW -->
+
+<div class="container" id="submit">
+
+    <h2>Rate or Add Anime</h2>
+
+    <div class="form-box">
+
+        <form method="POST">
+
+            <label>Select Your User Account</label>
+
+            <select name="user_id" required>
+
+                <?php foreach ($users as $user): ?>
+
+                    <option value="<?= clean($user["User_id"]) ?>">
+                        <?= clean($user["Username"]) ?>
+                    </option>
+
+                <?php endforeach; ?>
+
+            </select>
+
+            <label>Anime Selection</label>
+
+            <select name="anime_option" id="anime_option"
+                    onchange="toggleAnimeForm()" required>
+
+                <option value="existing">Rate Existing Anime</option>
+                <option value="new">Add New Anime</option>
+
+            </select>
+
+            <div id="existingAnime">
+
+                <label>Select Anime</label>
+
+                <select name="anime_id" id="anime_id">
+
+                    <?php foreach ($animeList as $anime): ?>
+
+                        <option value="<?= clean($anime["Anime_id"]) ?>">
+                            <?= clean($anime["Anime_title"]) ?>
+                        </option>
+
+                    <?php endforeach; ?>
+
+                </select>
+
+            </div>
+
+            <div id="newAnime" style="display:none;">
+
+                <h3>Add New Anime</h3>
+
+                <label>Anime Title</label>
+                <input type="text" name="anime_title">
+
+                <label>Description</label>
+                <textarea name="description"></textarea>
+
+                <label>Release Year</label>
+                <input type="number" name="release_year"
+                       min="1900" max="<?= date('Y') ?>">
+
+                <label>Episode Count</label>
+                <input type="number" name="episode_count" min="1">
+
+                <label>Anime Type</label>
+
+                <select name="anime_type">
+                    <option value="TV">TV</option>
+                    <option value="Movie">Movie</option>
+                    <option value="OVA">OVA</option>
+                    <option value="ONA">ONA</option>
+                    <option value="Special">Special</option>
+                </select>
+
+                <label>Studio</label>
+
+                <select name="studio_id">
+
+                    <?php foreach ($studios as $studio): ?>
+
+                        <option value="<?= clean($studio["Studio_id"]) ?>">
+                            <?= clean($studio["Studio_name"]) ?>
+                        </option>
+
+                    <?php endforeach; ?>
+
+                </select>
+
+            </div>
+
+            <label>Your Rating (1-10)</label>
+
+            <input type="number" name="rating"
+                   min="1" max="10" step="0.1" required>
+
+            <label>Your Review</label>
+
+            <textarea name="review_text"
+                      maxlength="255"
+                      placeholder="Write your thoughts about this anime..."
+                      required></textarea>
+
+            <button type="submit">
+                Submit Rating
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<!-- COMMUNITY REVIEWS -->
+
+<div class="container" id="reviews">
+
+    <h2>Recent Community Reviews</h2>
+
+    <?php foreach ($reviews as $review): ?>
+
+        <div class="review">
+
+            <h3><?= clean($review["Anime_title"]) ?></h3>
+
+            <p>
+                <strong>User:</strong>
+                <?= clean($review["Username"]) ?>
+            </p>
+
+            <p>
+                <strong>Rating:</strong>
+                <?= clean($review["rating"]) ?>/10
+            </p>
+
+            <p>
+                <?= clean($review["review_text"]) ?>
+            </p>
+
+            <small>
+                Posted: <?= clean($review["review_date"]) ?>
+            </small>
+
+        </div>
+
+    <?php endforeach; ?>
+
+</div>
+
+<footer>
+    <p>AnimeHub &copy; <?= date("Y") ?> | Community Anime Rankings</p>
+</footer>
+
+<script>
+
+function toggleAnimeForm() {
+
+    const option = document.getElementById("anime_option").value;
+
+    const existing = document.getElementById("existingAnime");
+    const newAnime = document.getElementById("newAnime");
+
+    const animeSelect = document.getElementById("anime_id");
+
+    if (option === "new") {
+
+        existing.style.display = "none";
+        newAnime.style.display = "block";
+
+        animeSelect.required = false;
+        animeSelect.disabled = true;
+
+    } else {
+
+        existing.style.display = "block";
+        newAnime.style.display = "none";
+
+        animeSelect.required = true;
+        animeSelect.disabled = false;
+
+    }
+
+}
+
+function selectAnime(id) {
+
+    document.getElementById("anime_option").value = "existing";
+
+    toggleAnimeForm();
+
+    document.getElementById("anime_id").value = id;
+
+}
+
+</script>
+
+</body>
+</html>
