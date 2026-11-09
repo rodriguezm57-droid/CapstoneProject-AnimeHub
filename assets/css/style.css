@@ -1,0 +1,213 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #11111b;
+    color: #f5f5f5;
+    font-family: Arial, sans-serif;
+    line-height: 1.5;
+}
+
+.site-header {
+    background: #1c1c2b;
+    padding: 25px;
+    text-align: center;
+    border-bottom: 2px solid #8b5cf6;
+}
+
+.site-header h1 {
+    color: #a78bfa;
+    font-size: 36px;
+    margin: 0;
+}
+
+.site-header p {
+    color: #c4c4d4;
+}
+
+.site-nav {
+    background: #252538;
+    padding: 15px;
+    text-align: center;
+}
+
+.site-nav a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+    font-weight: bold;
+}
+
+.site-nav a:hover,
+.text-link:hover {
+    color: #a78bfa;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 30px auto;
+}
+
+h2 {
+    color: #a78bfa;
+    border-bottom: 1px solid #44445c;
+    padding-bottom: 10px;
+}
+
+.anime-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+}
+
+.anime-card,
+.form-box,
+.review {
+    background: #222235;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #393950;
+}
+
+.anime-card h3,
+.review h3 {
+    color: #c4b5fd;
+}
+
+.rating {
+    font-size: 25px;
+    font-weight: bold;
+    color: #facc15;
+}
+
+.tier {
+    display: inline-block;
+    background: #8b5cf6;
+    color: white;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-weight: bold;
+}
+
+.form-box {
+    margin-top: 20px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0 18px;
+    background: #33334a;
+    color: white;
+    border: 1px solid #555570;
+    border-radius: 5px;
+}
+
+button,
+.button-link {
+    display: inline-block;
+    background: #8b5cf6;
+    color: white;
+    border: none;
+    padding: 11px 17px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+button:hover,
+.button-link:hover {
+    background: #7041d8;
+}
+
+.button-danger {
+    background: #991b1b;
+}
+
+.button-danger:hover {
+    background: #7f1d1d;
+}
+
+.secondary-link {
+    margin-left: 8px;
+    background: #4b5563;
+}
+
+.text-link {
+    color: #a78bfa;
+}
+
+.card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.card-actions form {
+    margin: 0;
+}
+
+.card-actions button {
+    margin: 0;
+}
+
+.review {
+    margin: 12px 0;
+}
+
+.success,
+.error {
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.success {
+    background: #14532d;
+}
+
+.error {
+    background: #7f1d1d;
+}
+
+.help-text {
+    color: #c4c4d4;
+    font-size: 0.95rem;
+}
+
+.hidden-panel {
+    display: none;
+}
+
+.site-footer {
+    text-align: center;
+    padding: 25px;
+    background: #1c1c2b;
+    margin-top: 50px;
+    color: #aaa;
+}
+
+@media (max-width: 600px) {
+    .site-nav a {
+        display: inline-block;
+        margin: 6px 8px;
+    }
+
+    .container {
+        width: 94%;
+    }
+}
