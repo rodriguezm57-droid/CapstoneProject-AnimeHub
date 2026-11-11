@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimeHub | My WatchList</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <header class="navbar">
+        <div class="logo">Anime<span>Hub</span></div>
+
+        <nav>
+            <a href="index.HTML" class="active">My WatchList</a>
+        </nav>
+    </header>
+
+    <main class="container">
+
+        <!-- Welcome Banner -->
+        <section class="hero">
+            <p class="eyebrow">YOUR ANIME UNIVERSE</p>
+            <h1>My WatchList</h1>
+            <p>Explore anime and build your personal collection.</p>
+        </section>
+
+        <!-- WatchList Statistics -->
+        <section class="stats">
+            <div class="stat-card">
+                <h2>0</h2>
+                <p>Total Anime</p>
+            </div>
+
+            <div class="stat-card">
+                <h2>0</h2>
+                <p>Watching</p>
+            </div>
+
+            <div class="stat-card">
+                <h2>0</h2>
+                <p>Completed</p>
+            </div>
+        </section>
+
+        <!-- Anime Collection -->
+        <section class="collection">
+
+            <div class="section-header">
+                <h2>Explore Anime</h2>
+                <input type="search"
+                       placeholder="Search your anime...">
+            </div>
+
+            <div class="filters">
+                <button class="selected">All Anime</button>
+                <button>Watching</button>
+                <button>Completed</button>
+                <button>Plan to Watch</button>
+            </div>
+
+            <div class="anime-grid">
+
+                <!-- Naruto -->
+                <article class="anime-card" data-title="Naruto">
+                    <img src="images/naruto.jpg"
+                         alt="Naruto poster"
+                         class="anime-poster">
+
+                    <div class="card-content">
+                        <h3>Naruto</h3>
+
+                        <div class="anime-tags">
+                            <span>Action</span>
+                            <span>Adventure</span>
+                            <span>Ninja</span>
+                        </div>
+
+                        <p class="anime-meta">
+                            2002 · Studio Pierrot · 220 Episodes
+                        </p>
+
+                        <p class="anime-description">
+                            Naruto Uzumaki dreams of becoming
+                            Hokage and earning the respect
+                            of his village.
+                        </p>
+
+                        <button type="button"
+                                class="view-button"
+                                onclick="showAnimeDetails(
+                                    'Naruto',
+                                    '2002',
+                                    'Action, Adventure',
+                                    'Studio Pierrot',
+                                    'Naruto follows a young ninja who dreams of becoming Hokage and protecting his village.'
+                                )">
+                            View Details
+                        </button>
+                    </div>
+                </article>
+
+                <!-- Attack on Titan -->
+                <article class="anime-card"
+                         data-title="Attack on Titan">
+
+                    <img src="images/attack-on-titan.jpg"
+                         alt="Attack on Titan poster"
+                         class="anime-poster">
+
+                    <div class="card-content">
+                        <h3>Attack on Titan</h3>
+
+                        <div class="anime-tags">
+                            <span>Action</span>
+                            <span>Dark Fantasy</span>
+                            <span>Mystery</span>
+                        </div>
+
+                        <p class="anime-meta">
+                            2013 · Wit Studio / MAPPA
+                        </p>
+
+                        <p class="anime-description">
+                            Humanity struggles to survive
+                            against giant Titans while
+                            uncovering secrets about the world.
+                        </p>
+
+                        <button type="button"
+                                class="view-button"
+                                onclick="showAnimeDetails(
+                                    'Attack on Titan',
+                                    '2013',
+                                    'Action, Dark Fantasy, Mystery',
+                                    'Wit Studio / MAPPA',
+                                    'Humanity fights for survival against giant Titans while uncovering the secrets behind their existence.'
+                                )">
+                            View Details
+                        </button>
+                    <!-- Naruto -->
+<img src="images/naruto.jpg"
+     alt="Naruto poster"
+     class="anime-poster">
+
+<!-- Attack on Titan -->
+<img src="images/attack-on-titan.jpg"
+     alt="Attack on Titan poster"
+     class="anime-poster">
+
+<!-- Demon Slayer -->
+<img src="images/demon-slayer.jpg"
+     alt="Demon Slayer poster"
+     class="anime-poster">
+                        
+                    </div>
+                </article>
+
+                <!-- Demon Slayer -->
+                <article class="anime-card"
+                         data-title="Demon Slayer">
+
+                    <img src="images/demon-slayer.jpg"
+                         alt="Demon Slayer poster"
+                         class="anime-poster">
+
+                    <div class="card-content">
+                        <h3>Demon Slayer</h3>
+
+                        <div class="anime-tags">
+                            <span>Action</span>
+                            <span>Adventure</span>
+                            <span>Fantasy</span>
+                        </div>
+
+                        <p class="anime-meta">
+                            2019 · ufotable
+                        </p>
+
+                        <p class="anime-description">
+                            Tanjiro becomes a demon slayer
+                            to protect his sister and
+                            fight dangerous demons.
+                        </p>
+
+                        <button type="button"
+                                class="view-button"
+                                onclick="showAnimeDetails(
+                                    'Demon Slayer',
+                                    '2019',
+                                    'Action, Adventure, Fantasy',
+                                    'ufotable',
+                                    'After his family is attacked, Tanjiro joins the Demon Slayer Corps and searches for a way to restore his sister.'
+                                )">
+                            View Details
+                        </button>
+                    </div>
+                </article>
+
+            </div> <!-- End anime-grid -->
+
+        </section> <!-- End collection -->
+
+        <!-- Manage WatchList -->
+        <section class="add-section">
+            <h2>Build Your WatchList</h2>
+            <p>Select an anime to start your collection.</p>
+
+            <a href="WatchList.php" class="add-button">
+                Manage WatchList
+            </a>
+        </section>
+
+    </main>
+
+    <!-- Anime Details Popup -->
+    <div id="animeModal" class="anime-modal" hidden>
+        <div class="modal-content">
+
+            <button type="button"
+                    class="close-button"
+                    onclick="closeAnime()"
+                    aria-label="Close details">
+                &times;
+            </button>
+
+            <h2 id="modalTitle"></h2>
+            <p id="modalInfo"></p>
+
+            <button id="addAnimeButton"
+                    class="add-button"
+                    type="button">
+                + Add to WatchList
+            </button>
+
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        function showAnimeDetails(title, year, genres, studio, description) {
+            document.getElementById("modalTitle").textContent = title;
+
+            document.getElementById("modalInfo").textContent =
+                "Released: " + year +
+                "\nGenres: " + genres +
+                "\nStudio: " + studio +
+                "\n\n" + description;
+
+            document.getElementById("animeModal").hidden = false;
+        }
+
+        function closeAnime() {
+            document.getElementById("animeModal").hidden = true;
+        }
+    </script>
+
+</body>
+</html>
