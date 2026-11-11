@@ -1,5 +1,6 @@
 
 <?php
+session_start();
 require_once '/var/www/db-config.php';
 
 $search = trim($_GET['search'] ?? '');
@@ -160,6 +161,34 @@ $animeList = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <header>
     <h1>AnimeHub</h1>
     <p>Discover your next favorite anime.</p>
+<div style="margin-top: 20px;">
+
+    <?php if (isset($_SESSION['user_id'])): ?>
+
+        <span style="color: #c4b5fd;">
+            Welcome, <?= htmlspecialchars($_SESSION['username'] ?? 'User') ?>!
+        </span>
+
+        <a href="logout.php"
+           style="color: #ffcc00; margin-left: 20px;">
+            Logout
+        </a>
+
+    <?php else: ?>
+
+        <a href="login.php"
+           style="color: #c4b5fd; margin-right: 20px;">
+            Login
+        </a>
+
+        <a href="register.php"
+           style="color: #ffcc00;">
+            Register
+        </a>
+
+    <?php endif; ?>
+
+</div>
 </header>
 
 <main>
